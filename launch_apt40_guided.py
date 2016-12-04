@@ -1,6 +1,6 @@
 import time
 from lib_PID import PID
-from utils import pitch, compute_circ_burn
+from utils import pitch, compute_circ_burn, find_all_fairings, jettison_fairing
 
 
 def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
@@ -10,7 +10,8 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
     vessel = conn.space_center.active_vessel
     ap = vessel.auto_pilot
 
-    has_fairings = len(vessel.parts.fairings) > 0
+    all_fairings = find_all_fairings(vessel)
+    has_fairings = len(all_fairings) > 0
 
     target_apt = 40.0
     turn_end_alt = 60000
@@ -161,9 +162,9 @@ def auto_stage(vessel, max_autostage):
 
 
 def drop_fairings(vessel):
-    fairings = filter(lambda f: f.tag != "noauto", vessel.parts.fairings)
+    fairings = filter(lambda f: f.tag != "noauto", find_all_fairings(vessel))
     for f in fairings:
-        f.fairing.jettison()
+        jettison_fairing(f)
 
 
 def init_ui(conn):
