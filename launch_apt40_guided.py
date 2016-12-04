@@ -3,7 +3,7 @@ from lib_PID import PID
 from utils import pitch, compute_circ_burn
 
 
-def launch(conn, max_autostage=0, target_altitude=100000):
+def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
 
     ui = init_ui(conn)
 
@@ -35,7 +35,7 @@ def launch(conn, max_autostage=0, target_altitude=100000):
     ap.target_pitch_and_heading(target_pitch, 90)
     vessel.control.throttle = 1
     vessel.control.sas = False
-    vessel.control.rcs = False
+    vessel.control.rcs = use_rcs
 
     # Launch
     while len(vessel.parts.launch_clamps) > 0:
