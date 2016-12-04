@@ -69,6 +69,9 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
             auto_stage(vessel, max_autostage)
 
         # Throttle control
+        if altitude() > 40000:
+            target_apt = 60.0
+
         new_thr = pid.seek(target_apt, apo_time(), ut())
         vessel.control.throttle = new_thr
 
@@ -97,6 +100,13 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
     while altitude() < 70000:
         pass
 
+    # Correct apoapsis
+    if apoapsis() < target_altitude:
+        vessel.control.throttle = 0.05
+        while apoapsis() <= target_altitude:
+            time.sleep(0.01)
+        vessel.control.throttle = 0
+
     # Compute circularization burn
     circ_burn = compute_circ_burn(vessel)
     node = vessel.control.add_node(ut() + apo_time(), prograde=circ_burn["delta_v"])
@@ -110,13 +120,13 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
     print('Waiting until circularization burn')
     burn_ut = ut() + apo_time() - (circ_burn["burn_time"] / 2.)
     lead_time = 15
-    if burn_ut > ut() + lead_time:
+    if burn_ut > ut() + lead_time * 2:
         conn.space_center.warp_to(burn_ut - lead_time)
 
     # Execute burn
     print('Ready to execute burn')
     while apo_time() - (circ_burn["burn_time"] / 2.) > 0:
-        pass
+        time.sleep(0.01)
 
     print('Executing burn')
     remaining_delta_v = conn.add_stream(getattr, node, 'remaining_delta_v')
@@ -127,7 +137,7 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
         vessel.control.throttle = 0.05
 
     last_remaining = remaining_delta_v()
-    while remaining_delta_v() > 0 and remaining_delta_v() > last_remaining:
+    while remaining_delta_v() > 0 and remaining_delta_v() < last_remaining:
         if remaining_delta_v() < 10:
             vessel.control.throttle = 0.05
         auto_stage(vessel, max_autostage)
