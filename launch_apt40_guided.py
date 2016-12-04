@@ -1,9 +1,11 @@
 import time
 from lib_PID import PID
-from utils import compute_circ_burn
+from utils import pitch, compute_circ_burn
 
 
 def launch(conn, max_autostage=0, target_altitude=100000):
+
+    ui = init_ui(conn)
 
     vessel = conn.space_center.active_vessel
     ap = vessel.auto_pilot
@@ -75,11 +77,14 @@ def launch(conn, max_autostage=0, target_altitude=100000):
                 drop_fairings(vessel)
 
         # Logging
-        if ut() - last_log > 5:
-            print("Speed: %d" % speed())
-            print("Alt: %d" % altitude())
-            print("Thr: %f" % new_thr)
-            print("Pitch: %d" % target_pitch)
+        if ut() - last_log > 1:
+            ui['texts']['speed'].content = "Speed: %d m/s" % speed()
+            ui['texts']['throttle'].content = "Throttle: %.1f %%" % (new_thr * 100.0)
+            ui['texts']['altitude'].content = "Altitude: %d m" % altitude()
+            ui['texts']['target_pitch'].content = "Tgt. pitch: %d °" % target_pitch
+            ui['texts']['current_pitch'].content = "Cur. pitch: %d °" % pitch(vessel)
+            ui['texts']['target_apt'].content = "Tgt. APT: %.1f s" % target_apt
+            ui['texts']['current_apt'].content = "Cur. APT: %.1f s" % apo_time()
             last_log = ut()
 
         time.sleep(0.01)
@@ -159,3 +164,57 @@ def drop_fairings(vessel):
     fairings = filter(lambda f: f.tag != "noauto", vessel.parts.fairings)
     for f in fairings:
         f.fairing.jettison()
+
+
+def init_ui(conn):
+    canvas = conn.ui.stock_canvas
+
+    # Get the size of the game window in pixels
+    screen_size = canvas.rect_transform.size
+
+    # Add a panel to contain the UI elements
+    panel = canvas.add_panel()
+
+    # Position the panel on the left of the screen
+    rect = panel.rect_transform
+    rect.size = (300, 160)
+    rect.position = (110 - (screen_size[0] / 2), 0)
+
+    texts = {}
+
+    texts['speed'] = panel.add_text("Speed: 0 m/s")
+    texts['speed'].rect_transform.position = (0, 50)
+    texts['speed'].color = (1, 1, 1)
+    texts['speed'].size = 16
+
+    texts['throttle'] = panel.add_text("Throttle: 0 %")
+    texts['throttle'].rect_transform.position = (0, 30)
+    texts['throttle'].color = (1, 1, 1)
+    texts['throttle'].size = 16
+
+    texts['altitude'] = panel.add_text("Altitude: 0 m")
+    texts['altitude'].rect_transform.position = (0, 10)
+    texts['altitude'].color = (1, 1, 1)
+    texts['altitude'].size = 16
+
+    texts['target_pitch'] = panel.add_text("Tgt. pitch: 0 °")
+    texts['target_pitch'].rect_transform.position = (0, -10)
+    texts['target_pitch'].color = (1, 1, 1)
+    texts['target_pitch'].size = 16
+
+    texts['current_pitch'] = panel.add_text("Cur. pitch: 0 °")
+    texts['current_pitch'].rect_transform.position = (0, -30)
+    texts['current_pitch'].color = (1, 1, 1)
+    texts['current_pitch'].size = 16
+
+    texts['target_apt'] = panel.add_text("Tgt. APT: 0 s")
+    texts['target_apt'].rect_transform.position = (0, -50)
+    texts['target_apt'].color = (1, 1, 1)
+    texts['target_apt'].size = 16
+
+    texts['current_apt'] = panel.add_text("Cur. APT: 0 s")
+    texts['current_apt'].rect_transform.position = (0, -70)
+    texts['current_apt'].color = (1, 1, 1)
+    texts['current_apt'].size = 16
+
+    return {'panel': panel, 'texts': texts}
