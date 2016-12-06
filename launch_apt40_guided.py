@@ -137,7 +137,7 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
         vessel.control.throttle = 0.05
 
     last_remaining = remaining_delta_v()
-    while remaining_delta_v() > 0 and remaining_delta_v() < last_remaining:
+    while remaining_delta_v() > 0 and remaining_delta_v() <= last_remaining:
         if remaining_delta_v() < 10:
             vessel.control.throttle = 0.05
         auto_stage(vessel, max_autostage)
