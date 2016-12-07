@@ -1,6 +1,6 @@
 import time
 from lib.pid import PID
-from lib.utils import pitch, compute_circ_burn
+from lib.nav import pitch, compute_circ_burn
 
 
 def launch(conn):

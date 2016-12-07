@@ -1,4 +1,5 @@
 import math
+from vector import angle_between_vectors
 
 
 def pitch(vessel):
@@ -13,24 +14,6 @@ def pitch(vessel):
     pitch = -pitch
 
   return pitch
-
-
-def dot_product(x, y):
-  return x[0] * y[0] + x[1] * y[1] + x[2] * y[2]
-
-
-def magnitude(x):
-  return math.sqrt(x[0]**2 + x[1]**2 + x[2]**2)
-
-
-def angle_between_vectors(x, y):
-  # Compute the angle between vector x and y
-  dp = dot_product(x, y)
-  if dp == 0:
-    return 0
-  xm = magnitude(x)
-  ym = magnitude(y)
-  return math.acos(dp / (xm * ym)) * (180. / math.pi)
 
 
 def compute_circ_burn(vessel):
@@ -49,22 +32,7 @@ def compute_circ_burn(vessel):
   flow_rate = F / Isp
   burn_time = (m0 - m1) / flow_rate
 
-  return {
-    "delta_v": delta_v,
-    "burn_time": burn_time
-  }
+  return {"delta_v": delta_v,
+          "burn_time": burn_time
+          }
 
-
-def find_all_fairings(vessel):
-  stock_fairings = vessel.parts.fairings
-  proc_fairings = vessel.parts.with_module("ProceduralFairingDecoupler")
-  return stock_fairings + proc_fairings
-
-
-def jettison_fairing(part):
-  if part.fairing is not None:
-    part.fairing.jettison()
-  else:
-    for module in part.modules:
-      if module.name == "ProceduralFairingDecoupler":
-        module.trigger_event("Jettison")

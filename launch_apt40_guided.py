@@ -1,6 +1,7 @@
 import time
 from lib.pid import PID
-from lib.utils import pitch, compute_circ_burn, find_all_fairings, jettison_fairing
+from lib.nav import pitch, compute_circ_burn
+from lib.parts import find_all_fairings, jettison_fairing
 
 
 def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
