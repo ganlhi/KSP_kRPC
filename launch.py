@@ -20,14 +20,14 @@ lqd_fuel = conn.add_stream(vessel.resources.amount, 'LiquidFuel')
 
 # function for staging (used twice below)
 def drop_stage1():
-    time.sleep(0.5)
-    vessel.control.activate_next_stage()
-    time.sleep(1)
-    vessel.control.activate_next_stage()
+  time.sleep(0.5)
+  vessel.control.activate_next_stage()
+  time.sleep(1)
+  vessel.control.activate_next_stage()
 
 
 while not vessel.control.get_action_group(9):
-    time.sleep(1)
+  time.sleep(1)
 
 print('Countdown...')
 vessel.auto_pilot.target_pitch_and_heading(90, 90)
@@ -47,32 +47,32 @@ stage1_sep = False
 turn_angle = 0
 while True:
 
-    # Gravity turn
-    if altitude() > turn_start_altitude and altitude() < turn_end_altitude:
-        turn_alt_diff = turn_end_altitude - turn_start_altitude
-        frac = (altitude() - turn_start_altitude) / turn_alt_diff
-        new_turn_angle = frac * 90
-        if abs(new_turn_angle - turn_angle) > 0.5:
-            turn_angle = new_turn_angle
-            vessel.auto_pilot.target_pitch_and_heading(90-turn_angle, 90)
+  # Gravity turn
+  if altitude() > turn_start_altitude and altitude() < turn_end_altitude:
+    turn_alt_diff = turn_end_altitude - turn_start_altitude
+    frac = (altitude() - turn_start_altitude) / turn_alt_diff
+    new_turn_angle = frac * 90
+    if abs(new_turn_angle - turn_angle) > 0.5:
+      turn_angle = new_turn_angle
+      vessel.auto_pilot.target_pitch_and_heading(90-turn_angle, 90)
 
-    # Staging
-    if not stage1_sep:
-        if lqd_fuel() < 0.1:
-            vessel.control.throttle = 0
-            drop_stage1()
-            stage1_sep = True
-            vessel.control.throttle = 1
+  # Staging
+  if not stage1_sep:
+    if lqd_fuel() < 0.1:
+      vessel.control.throttle = 0
+      drop_stage1()
+      stage1_sep = True
+      vessel.control.throttle = 1
 
-    # Decrease throttle when approaching target apoapsis
-    if apoapsis() > target_altitude*0.9:
-        print('Approaching target apoapsis')
-        break
+  # Decrease throttle when approaching target apoapsis
+  if apoapsis() > target_altitude*0.9:
+    print('Approaching target apoapsis')
+    break
 
 # Disable engines when target apoapsis is reached
 vessel.control.throttle = 0.25
 while apoapsis() < target_altitude:
-    pass
+  pass
 
 print('Target apoapsis reached')
 vessel.control.throttle = 0
@@ -80,11 +80,11 @@ vessel.control.throttle = 0
 # Wait until out of atmosphere
 print('Coasting out of atmosphere')
 while altitude() < 70500:
-    pass
+  pass
 
 # Drop first stage if needed
 if not stage1_sep:
-    drop_stage1()
+  drop_stage1()
 
 
 # Plan circularization burn (using vis-viva equation)
@@ -97,8 +97,8 @@ v1 = math.sqrt(mu*((2./r)-(1./a1)))
 v2 = math.sqrt(mu*((2./r)-(1./a2)))
 delta_v = v2 - v1
 node = vessel.control.add_node(
-    ut() + vessel.orbit.time_to_apoapsis,
-    prograde=delta_v
+  ut() + vessel.orbit.time_to_apoapsis,
+  prograde=delta_v
 )
 
 # Calculate burn time (using rocket equation)
@@ -120,23 +120,23 @@ print('Waiting until circularization burn')
 burn_ut = ut() + vessel.orbit.time_to_apoapsis - (burn_time/2.)
 lead_time = 5
 if burn_ut > ut() + lead_time:
-    conn.space_center.warp_to(burn_ut - lead_time)
+  conn.space_center.warp_to(burn_ut - lead_time)
 
 # Execute burn
 print('Ready to execute burn')
 time_to_apoapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_apoapsis')
 while time_to_apoapsis() - (burn_time/2.) > 0:
-    pass
+  pass
 print('Executing burn')
 vessel.control.throttle = 1
 time.sleep(burn_time - 0.1)
 print('Fine tuning')
 vessel.control.throttle = 0.05
 remaining_burn = conn.add_stream(
-    node.remaining_burn_vector, node.reference_frame
+  node.remaining_burn_vector, node.reference_frame
 )
 while remaining_burn()[1] > 0:
-    pass
+  pass
 vessel.control.throttle = 0
 node.remove()
 
