@@ -1,4 +1,16 @@
-"""Mission runner module"""
+"""Mission runner module
+
+  Expected format of mission steps:
+  dict({
+    "step_name": step_func,
+    ...
+  })
+
+  with step_func being a function like:
+
+  def step_func(mission):
+    ...
+"""
 
 class Mission:
   """Mission runner
