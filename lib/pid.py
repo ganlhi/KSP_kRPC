@@ -1,4 +1,11 @@
+"""PID controller module"""
+
 class PID:
+  """Generic PID controller class
+
+    This class allows to control an input/output relationship
+    through a PID controller, tuned by 3 parameters Kp, Ki and Kd.
+  """
 
   def __init__(self, Kp=0.2, Ki=0.0, Kd=0.0, cMin=0, cMax=1):
 
@@ -16,6 +23,7 @@ class PID:
     self.oldInput = 0.0
 
   def seek(self, seekVal, curVal, ut):
+    """Computes new input value based on current and expected output values"""
 
     P = seekVal - curVal
     D = self.D
@@ -29,7 +37,8 @@ class PID:
         D = (P - self.P) / dT
         onlyPD = self.Kp * P + self.Kd * D
 
-        if (self.I > 0 or onlyPD > self.cMin) and (self.I < 0 or onlyPD < self.cMax):
+        if ((self.I > 0 or onlyPD > self.cMin)
+        and (self.I < 0 or onlyPD < self.cMax)):
           I = self.I + P * dT
 
         newInput = onlyPD + self.Ki * I
