@@ -1,10 +1,10 @@
 """Mission runner module
 
   Expected format of mission steps:
-  dict({
-    "step_name": step_func,
+  [
+    {"name": "step_name", "function": step_func},
     ...
-  })
+  ]
 
   with step_func being a function like:
 
@@ -33,7 +33,7 @@ class Mission:
     """Stores kRPC connection and mission steps"""
     self.conn = conn
     self.steps = steps
-    self.steps_names = list(self.steps.keys())
+    self.steps_names = [s["name"] for s in steps]
     if type(parameters) is dict:
       self.parameters = parameters
     self.ut = conn.add_stream(getattr, conn.space_center, 'ut')
@@ -66,7 +66,7 @@ class Mission:
   def update(self):
     """Executes the current step if mission is running"""
     if self.running:
-      self.steps[self.current_step["name"]](self)
+      self.steps[self.current_step["name"]]["function"](self)
       self.current_step["first_call"] = False
 
   def next(self, auto_terminate=True):
