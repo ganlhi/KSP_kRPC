@@ -29,7 +29,7 @@ class Mission:
   parameters = {}
   ut = None
 
-  def __init__(self, conn, steps, parameters):
+  def __init__(self, conn, steps, parameters=None):
     """Stores kRPC connection and mission steps"""
     self.conn = conn
     self.steps = steps
