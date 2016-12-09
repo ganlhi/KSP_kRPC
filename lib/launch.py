@@ -4,9 +4,9 @@
 """
 
 import time
-from pid import PID
-from nav import pitch, compute_circ_burn
-from parts import find_all_fairings, jettison_fairing
+from lib.pid import PID
+from lib.nav import pitch, compute_circ_burn
+from lib.parts import find_all_fairings, jettison_fairing
 
 
 def pre_launch(mission):
@@ -38,3 +38,11 @@ def launch(mission):
       first = False
 
     mission.next()
+
+
+
+
+all_steps = [
+  {"name": "pre_launch", "function": pre_launch},
+  {"name": "launch", "function": launch},
+]
