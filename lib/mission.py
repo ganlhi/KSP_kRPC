@@ -42,6 +42,7 @@ class Mission:
     """Explicitly stops the update cycle"""
     self.done = True
     self.running = False
+    print("[mission]", "Terminating")
 
   def start(self, step=None):
     """Start running the update cycle
@@ -63,6 +64,8 @@ class Mission:
       self.running = True
       self.done = False
 
+      print("[mission]", "Starting at step", step)
+
   def update(self):
     """Executes the current step if mission is running"""
     if self.running:
@@ -83,3 +86,4 @@ class Mission:
       self.current_step["name"] = self.steps_names[cur_pos + 1]
       self.current_step["first_call"] = True
       self.current_step["start_ut"] = self.ut()
+      print("[mission]", "Switching to step", self.current_step["name"])
