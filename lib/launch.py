@@ -11,9 +11,10 @@ from parts import find_all_fairings, jettison_fairing
 
 def pre_launch(mission):
   """Configure vessel before launch"""
-  if  mission.met > 10:
+  started_since = mission.ut() - mission.current_step["start_ut"]
+  if started_since > 10:
     mission.next()
-  elif mission.current_step_first_call:
+  elif mission.current_step["first_call"]:
     vessel = mission.conn.active_vessel
     ap = vessel.auto_pilot
 
@@ -28,7 +29,12 @@ def launch(mission):
   """Ignite first stage and release clamps"""
   vessel = mission.conn.active_vessel
 
-  if mission.current_step_first_call:
+  if mission.current_step["first_call"]:
+    first = True
     while len(vessel.parts.launch_clamps) > 0:
+      if not first:
+        time.sleep(1)
       vessel.control.activate_next_stage()
-      time.sleep(1)
+      first = False
+
+    mission.next()

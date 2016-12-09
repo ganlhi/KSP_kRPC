@@ -23,14 +23,11 @@ class Mission:
   conn = None
   done = False
   running = False
-  current_step = None
-  current_step_first_call = True
+  current_step = {"name": None, "first_call": True, "start_ut": None}
   steps = None
   steps_names = None
   parameters = {}
   ut = None
-  start_ut = None
-  met = None
 
   def __init__(self, conn, steps, parameters):
     """Stores kRPC connection and mission steps"""
@@ -59,17 +56,18 @@ class Mission:
       if step is None:
         step = self.steps_names[0]
 
-      self.current_step = step
+      self.current_step["name"] = step
+      self.current_step["start_ut"] = self.ut()
+      self.current_step["first_call"] = True
+
       self.running = True
       self.done = False
-      self.start_ut = self.ut()
 
   def update(self):
     """Executes the current step if mission is running"""
-    self.met = self.ut() - self.start_ut
     if self.running:
-      self.steps[self.current_step](self)
-      self.current_step_first_call = False
+      self.steps[self.current_step["name"]](self)
+      self.current_step["first_call"] = False
 
   def next(self, auto_terminate=True):
     """Advances to the next step, if there is one
@@ -77,10 +75,11 @@ class Mission:
       Unless auto_terminate is True, if no other step,
       the mission is automatically terminated
     """
-    cur_pos = self.steps_names.index(self.current_step)
+    cur_pos = self.steps_names.index(self.current_step["name"])
     if cur_pos >= len(self.steps_names):
       if auto_terminate:
         self.terminate()
     else:
-      self.current_step = self.steps_names[cur_pos + 1]
-      self.current_step_first_call = True
+      self.current_step["name"] = self.steps_names[cur_pos + 1]
+      self.current_step["first_call"] = True
+      self.current_step["start_ut"] = self.ut()
