@@ -9,13 +9,9 @@ from lib.steps.launch import all_steps
 def run():
   """Run mission"""
   conn = krpc.connect()
-  mission = Mission(conn, all_steps)
+  mission = Mission(conn, all_steps).run()
 
-  ut = conn.add_stream(getattr, conn.space_center, 'ut')
-
-  mission.start()
-  while mission.running:
-    mission.update()
+  while next(mission):
     time.sleep(0.01)
 
 

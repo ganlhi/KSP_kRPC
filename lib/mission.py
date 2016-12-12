@@ -38,6 +38,13 @@ class Mission:
       self.parameters = parameters
     self.ut = conn.add_stream(getattr, conn.space_center, 'ut')
 
+  def run(self, starting_step=None):
+    """Run as a generator"""
+    self.start(starting_step)
+    while self.running:
+      self.update()
+      yield
+
   def terminate(self):
     """Explicitly stops the update cycle"""
     self.done = True
