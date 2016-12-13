@@ -15,7 +15,7 @@ def launch(conn, max_autostage=0, target_altitude=100000, use_rcs=False):
   has_fairings = len(all_fairings) > 0
 
   target_apt = 40.0
-  turn_end_alt = 60000
+  turn_end_alt = target_altitude * 0.6
   turn_start_alt = 1000
   turn_start_speed = 100
   turn_step = 0
@@ -173,7 +173,8 @@ def auto_stage(vessel, max_autostage):
 
 
 def drop_fairings(vessel):
-  fairings = filter(lambda f: f.tag != "noauto", find_all_fairings(vessel))
+  fairings = filter(lambda f: getattr(f, 'tag', None) != "noauto",
+                    find_all_fairings(vessel))
   for f in fairings:
     jettison_fairing(f)
 

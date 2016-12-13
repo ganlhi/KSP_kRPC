@@ -12,6 +12,7 @@
     ...
 """
 
+
 class Mission:
   """Mission runner
 

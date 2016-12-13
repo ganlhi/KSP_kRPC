@@ -9,8 +9,10 @@ def find_all_fairings(vessel):
 
 def jettison_fairing(part):
   """Jetissons a fairing, either stock or procedural"""
-  if part.fairing is not None:
+  if hasattr(part, 'fairing'):
     part.fairing.jettison()
+  elif callable(getattr(part, 'jettison', None)):
+    part.jettison()
   else:
     for module in part.modules:
       if module.name == "ProceduralFairingDecoupler":

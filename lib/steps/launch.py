@@ -56,7 +56,7 @@ def gravity_turn(mission):
   altitude = vessel.flight().mean_altitude
   apo_time = vessel.orbit.time_to_apoapsis
   target_altitude = mission.parameters.get('target_altitude', 100000)
-  turn_end_alt = mission.parameters.get('turn_end_alt', 60000)
+  turn_end_alt = mission.parameters.get('turn_end_alt', target_altitude * 0.6)
   turn_start_alt = mission.parameters.get('turn_start_alt', 1000)
   min_pitch = mission.parameters.get('min_pitch', 10)
   target_apt = mission.parameters.get('target_apt', 40)
@@ -85,6 +85,7 @@ def gravity_turn(mission):
   turn_angle = 90 * frac_num / frac_den
   target_pitch = max(min_pitch, 90 - turn_angle)
   vessel.auto_pilot.target_pitch_and_heading(target_pitch, 90)
+  mission.parameters["target_pitch"] = target_pitch
 
   new_thr = mission.parameters["pid"].seek(target_apt, apo_time, mission.ut())
   vessel.control.throttle = new_thr
@@ -191,24 +192,26 @@ def delay_completion(mission):
 ###################################
 
 all_steps = [
-  {"name": "pre_launch", "function": pre_launch},
-  {"name": "launch", "function": launch},
-  {"name": "gravity_turn", "function": gravity_turn},
-  {"name": "coast_to_space", "function": coast_to_space},
-  {"name": "correct_apoapsis", "function": correct_apoapsis},
-  {"name": "prepare_circ_burn", "function": prepare_circ_burn},
-  {"name": "coast_to_circ_burn", "function": coast_to_circ_burn},
-  {"name": "execute_circ_burn", "function": execute_circ_burn},
-  {"name": "delay_completion", "function": delay_completion},
+    {"name": "pre_launch", "function": pre_launch},
+    {"name": "launch", "function": launch},
+    {"name": "gravity_turn", "function": gravity_turn},
+    {"name": "coast_to_space", "function": coast_to_space},
+    {"name": "correct_apoapsis", "function": correct_apoapsis},
+    {"name": "prepare_circ_burn", "function": prepare_circ_burn},
+    {"name": "coast_to_circ_burn", "function": coast_to_circ_burn},
+    {"name": "execute_circ_burn", "function": execute_circ_burn},
+    {"name": "delay_completion", "function": delay_completion},
 ]
 
 ###################################
 
 # Utility functions
 
+
 def drop_fairings(vessel):
   """Drop all fairings not tagged as 'noauto'"""
-  fairings = [f for f in find_all_fairings(vessel) if f.tag != "noauto"]
+  fairings = filter(lambda f: getattr(f, 'tag', None) != "noauto",
+                    find_all_fairings(vessel))
   for f in fairings:
     jettison_fairing(f)
 
