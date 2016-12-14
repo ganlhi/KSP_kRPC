@@ -4,6 +4,7 @@
 """
 
 import time
+import math
 from lib.pid import PID
 from lib.nav import compute_circ_burn
 from lib.parts import find_all_fairings, jettison_fairing
@@ -55,6 +56,7 @@ def gravity_turn(mission):
   apoapsis = vessel.orbit.apoapsis_altitude
   altitude = vessel.flight().mean_altitude
   apo_time = vessel.orbit.time_to_apoapsis
+  per_time = vessel.orbit.time_to_periapsis
   target_altitude = mission.parameters.get('target_altitude', 100000)
   turn_end_alt = mission.parameters.get('turn_end_alt', target_altitude * 0.6)
   turn_start_alt = mission.parameters.get('turn_start_alt', 1000)
@@ -68,7 +70,11 @@ def gravity_turn(mission):
   if apoapsis > target_altitude:
     del mission.parameters["pid"]
     vessel.control.throttle = 0
-    mission.next()
+    mission.next('coast_to_space')
+    return
+
+  if altitude() > vessel.orbit.body.atmosphere_depth:
+    mission.next('burn_to_apo')
     return
 
   if vessel.flight().static_pressure < 100:
@@ -87,8 +93,58 @@ def gravity_turn(mission):
   vessel.auto_pilot.target_pitch_and_heading(target_pitch, 90)
   mission.parameters["target_pitch"] = target_pitch
 
-  new_thr = mission.parameters["pid"].seek(target_apt, apo_time, mission.ut())
+  if per_time < apo_time:
+    new_thr = 1
+  else:
+    new_thr = mission.parameters["pid"].seek(target_apt, apo_time, mission.ut())
+
   vessel.control.throttle = new_thr
+
+
+def burn_to_apo(mission):
+  """Adjust pitch to limit APT to X seconds"""
+  vessel = mission.conn.active_vessel
+
+  apoapsis = vessel.orbit.apoapsis_altitude
+  half_period = vessel.orbit.period / 2
+  apo_time = vessel.orbit.time_to_apoapsis
+  target_altitude = mission.parameters.get('target_altitude', 100000)
+  target_apt = mission.parameters.get('target_apt', 40)
+  max_autostage = mission.parameters.get('max_autostage', 0)
+  min_pitch = mission.parameters.get('min_pitch', -10)
+  max_pitch = mission.parameters.get('max_pitch', 30)
+
+  if mission.current_step["first_call"]:
+    mission.parameters["pid"] = PID(0.2, 0.01, 0.1, min_pitch, max_pitch)
+    vessel.control.throttle = 1
+
+  if apoapsis > target_altitude:
+    del mission.parameters["pid"]
+    vessel.control.throttle = 0
+    mission.next('coast_to_space')
+    return
+
+  auto_stage(vessel, max_autostage)
+
+  """Adjust pitch around 0 to control APT:
+
+    si APT devient grand (mais < 1/2 periode) : diminuer pitch
+    si APT tend vers 0 : augmenter pitch
+    si APT devient grand (> 1/2 periode) : augmenter pitch
+
+    si APT > .5 periode
+      pitch = max
+    sinon
+      pitch = pid(-APT)
+  """
+  if half_period < apo_time:
+    target_pitch = max_pitch
+  else:
+    apt_error = math.fabs(apo_time - target_apt)
+    target_pitch = mission.parameters["pid"].seek(0, apt_error, mission.ut())
+
+  vessel.auto_pilot.target_pitch_and_heading(target_pitch, 90)
+  mission.parameters["target_pitch"] = target_pitch
 
 
 def coast_to_space(mission):

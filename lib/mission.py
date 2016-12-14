@@ -80,18 +80,23 @@ class Mission:
       self.steps[self.current_step["name"]]["function"](self)
       self.current_step["first_call"] = False
 
-  def next(self, auto_terminate=True):
+  def next(self, step=None, auto_terminate=True):
     """Advances to the next step, if there is one
 
       Unless auto_terminate is True, if no other step,
       the mission is automatically terminated
     """
-    cur_pos = self.steps_names.index(self.current_step["name"])
-    if cur_pos >= len(self.steps_names):
-      if auto_terminate:
-        self.terminate()
+    if step is None:
+      cur_pos = self.steps_names.index(self.current_step["name"])
+      if cur_pos >= len(self.steps_names):
+        if auto_terminate:
+          self.terminate()
+      else:
+        next_step = self.steps_names[cur_pos + 1]
     else:
-      self.current_step["name"] = self.steps_names[cur_pos + 1]
-      self.current_step["first_call"] = True
-      self.current_step["start_ut"] = self.ut()
-      print("[mission]", "Switching to step", self.current_step["name"])
+      next_step = step
+
+    self.current_step["name"] = next_step
+    self.current_step["first_call"] = True
+    self.current_step["start_ut"] = self.ut()
+    print("[mission]", "Switching to step", self.current_step["name"])
