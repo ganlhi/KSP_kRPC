@@ -12,6 +12,8 @@
     ...
 """
 
+import time
+
 
 class Mission:
   """Mission runner
@@ -38,13 +40,6 @@ class Mission:
     if type(parameters) is dict:
       self.parameters = parameters
     self.ut = conn.add_stream(getattr, conn.space_center, 'ut')
-
-  def run(self, starting_step=None):
-    """Run as a generator"""
-    self.start(starting_step)
-    while self.running:
-      self.update()
-      yield
 
   def terminate(self):
     """Explicitly stops the update cycle"""
@@ -77,8 +72,11 @@ class Mission:
   def update(self):
     """Executes the current step if mission is running"""
     if self.running:
-      self.steps[self.current_step["name"]]["function"](self)
-      self.current_step["first_call"] = False
+      cur_pos = self.steps_names.index(self.current_step["name"])
+      self.steps[cur_pos]["function"](self)
+
+      next_pos = self.steps_names.index(self.current_step["name"])
+      self.current_step["first_call"] = next_pos != cur_pos
 
   def next(self, step=None, auto_terminate=True):
     """Advances to the next step, if there is one
@@ -88,7 +86,7 @@ class Mission:
     """
     if step is None:
       cur_pos = self.steps_names.index(self.current_step["name"])
-      if cur_pos >= len(self.steps_names):
+      if cur_pos + 1 >= len(self.steps_names):
         if auto_terminate:
           self.terminate()
       else:

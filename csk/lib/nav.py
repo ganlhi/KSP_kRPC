@@ -1,7 +1,7 @@
 """Utility functions for navigation purposes"""
 
 import math
-from lib.vector import angle_between_vectors
+from .vector import angle_between_vectors
 
 
 def pitch(vessel):

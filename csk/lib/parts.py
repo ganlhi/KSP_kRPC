@@ -1,5 +1,6 @@
 """Utility functions to manipulate vessel parts"""
 
+
 def find_all_fairings(vessel):
   """Finds all vessel fairings, both stock and procedural ones"""
   stock_fairings = vessel.parts.fairings

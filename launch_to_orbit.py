@@ -2,9 +2,9 @@
 
 import time
 import krpc
-from lib.mission import Mission
-from lib.nav import pitch
-from lib.steps.launch import all_steps
+from csk.lib.mission import Mission
+from csk.lib.nav import pitch
+from csk.lib.steps.launch import all_steps
 
 
 def init_ui(conn):
@@ -18,45 +18,50 @@ def init_ui(conn):
 
   # Position the panel on the left of the screen
   rect = panel.rect_transform
-  rect.size = (300, 160)
-  rect.position = (110 - (screen_size[0] / 2), 0)
+  rect.size = (300, 180)
+  rect.position = (160 - screen_size[0] / 2, screen_size[1] / 2 - 160)
 
   texts = {}
 
+  texts['step'] = panel.add_text("Step: N/A")
+  texts['step'].rect_transform.position = (-50, 65)
+  texts['step'].color = (.2, .5, 1)
+  texts['step'].size = 14
+
   texts['speed'] = panel.add_text("Speed: 0 m/s")
-  texts['speed'].rect_transform.position = (0, 50)
+  texts['speed'].rect_transform.position = (-50, 40)
   texts['speed'].color = (1, 1, 1)
-  texts['speed'].size = 16
+  texts['speed'].size = 14
 
   texts['throttle'] = panel.add_text("Throttle: 0 %")
-  texts['throttle'].rect_transform.position = (0, 30)
+  texts['throttle'].rect_transform.position = (-50, 20)
   texts['throttle'].color = (1, 1, 1)
-  texts['throttle'].size = 16
+  texts['throttle'].size = 14
 
   texts['altitude'] = panel.add_text("Altitude: 0 m")
-  texts['altitude'].rect_transform.position = (0, 10)
+  texts['altitude'].rect_transform.position = (-50, 00)
   texts['altitude'].color = (1, 1, 1)
-  texts['altitude'].size = 16
+  texts['altitude'].size = 14
 
   texts['target_pitch'] = panel.add_text("Tgt. pitch: 0 °")
-  texts['target_pitch'].rect_transform.position = (0, -10)
+  texts['target_pitch'].rect_transform.position = (-50, -20)
   texts['target_pitch'].color = (1, 1, 1)
-  texts['target_pitch'].size = 16
+  texts['target_pitch'].size = 14
 
   texts['current_pitch'] = panel.add_text("Cur. pitch: 0 °")
-  texts['current_pitch'].rect_transform.position = (0, -30)
+  texts['current_pitch'].rect_transform.position = (-50, -40)
   texts['current_pitch'].color = (1, 1, 1)
-  texts['current_pitch'].size = 16
+  texts['current_pitch'].size = 14
 
   texts['target_apt'] = panel.add_text("Tgt. APT: 0 s")
-  texts['target_apt'].rect_transform.position = (0, -50)
+  texts['target_apt'].rect_transform.position = (-50, -60)
   texts['target_apt'].color = (1, 1, 1)
-  texts['target_apt'].size = 16
+  texts['target_apt'].size = 14
 
   texts['current_apt'] = panel.add_text("Cur. APT: 0 s")
-  texts['current_apt'].rect_transform.position = (0, -70)
+  texts['current_apt'].rect_transform.position = (-50, -80)
   texts['current_apt'].color = (1, 1, 1)
-  texts['current_apt'].size = 16
+  texts['current_apt'].size = 14
 
   return {'panel': panel, 'texts': texts}
 
@@ -65,11 +70,11 @@ if __name__ == "__main__":
   conn = krpc.connect()
   vessel = conn.space_center.active_vessel
 
-  params = {'target_altitude': 110000,
-            'turn_end_alt': 90000,
+  params = {'target_altitude': 120000,
+            'turn_end_alt': 70000,
             'target_apt': 50}
 
-  mission = Mission(conn, all_steps, params).run()
+  mission = Mission(conn, all_steps, params)
   ui = init_ui(conn)
 
   orbit_frame = vessel.orbit.body.reference_frame
@@ -80,12 +85,17 @@ if __name__ == "__main__":
   apo_time = conn.add_stream(getattr, vessel.orbit, 'time_to_apoapsis')
   thr = conn.add_stream(getattr, vessel.control, 'throttle')
 
+  mission.start()
   last_log = ut()
 
-  while next(mission):
+  while mission.running:
+    mission.update()
+
     if ut() - last_log > 1:
       target_apt = mission.parameters.get('target_apt')
       target_pitch = mission.parameters.get('target_pitch', None)
+
+      step_name = mission.current_step['name'].replace('_', ' ').title()
 
       if target_pitch is None:
         ui['texts']['target_pitch'].content = "Tgt. pitch: N/A"
@@ -97,6 +107,7 @@ if __name__ == "__main__":
       ui['texts']['current_pitch'].content = "Cur. pitch: %d °" % pitch(vessel)
       ui['texts']['target_apt'].content = "Tgt. APT: %.1f s" % target_apt
       ui['texts']['current_apt'].content = "Cur. APT: %.1f s" % apo_time()
+      ui['texts']['step'].content = "Step: %s" % step_name
       last_log = ut()
 
-    time.sleep(0.01)
+    time.sleep(0.1)
