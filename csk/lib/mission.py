@@ -89,6 +89,7 @@ class Mission:
       if cur_pos + 1 >= len(self.steps_names):
         if auto_terminate:
           self.terminate()
+          return
       else:
         next_step = self.steps_names[cur_pos + 1]
     else:

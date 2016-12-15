@@ -129,8 +129,7 @@ def burn_to_apo(mission):
   if half_period < apo_time:
     target_pitch = max_pitch
   else:
-    apt_error = math.fabs(apo_time - target_apt)
-    target_pitch = mission.parameters["pid"].seek(0, apt_error, mission.ut())
+    target_pitch = mission.parameters["pid"].seek(target_apt, apo_time, mission.ut())
 
   vessel.auto_pilot.target_pitch_and_heading(target_pitch, 90)
   mission.parameters["target_pitch"] = target_pitch
@@ -174,7 +173,7 @@ def prepare_circ_burn(mission):
 
   if mission.current_step["first_call"]:
     circ_burn = compute_circ_burn(vessel)
-    circ_burn["burn_start_time"] = apo_time - (circ_burn["burn_time"] / 2.)
+    circ_burn["burn_start_time"] = mission.ut() + apo_time - (circ_burn["burn_time"] / 2.)
     circ_burn["node"] = vessel.control.add_node(mission.ut() + apo_time,
                                                 prograde=circ_burn["delta_v"])
 
@@ -184,7 +183,7 @@ def prepare_circ_burn(mission):
 
   elif ap.error < 1 and mission.ut() - mission.current_step["start_ut"] > 1:
     circ_burn = mission.parameters["circ_burn"]
-    burn_ut = mission.ut() + circ_burn["burn_start_time"]
+    burn_ut = circ_burn["burn_start_time"]
     lead_time = 15
     if burn_ut > mission.ut() + lead_time * 2:
       mission.conn.space_center.warp_to(burn_ut - lead_time)
@@ -195,7 +194,7 @@ def coast_to_circ_burn(mission):
   """Wait time to burn"""
   circ_burn = mission.parameters["circ_burn"]
 
-  if circ_burn["burn_start_time"] <= 0:
+  if circ_burn["burn_start_time"] <= mission.ut():
     mission.next()
 
 

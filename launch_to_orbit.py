@@ -71,7 +71,7 @@ if __name__ == "__main__":
   vessel = conn.space_center.active_vessel
 
   params = {'target_altitude': 120000,
-            'turn_end_alt': 70000,
+            'turn_end_alt': 80000,
             'target_apt': 50}
 
   mission = Mission(conn, all_steps, params)
