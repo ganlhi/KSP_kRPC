@@ -4,9 +4,8 @@
 """
 
 import time
-import math
 from ..pid import PID
-from ..nav import compute_circ_burn
+from ..nav import compute_circ_burn, compute_burn_time
 from ..parts import find_all_fairings, jettison_fairing
 
 
@@ -104,6 +103,7 @@ def gravity_turn(mission):
 def burn_to_apo(mission):
   """Adjust pitch to limit APT to X seconds"""
   vessel = mission.conn.space_center.active_vessel
+  ap = vessel.auto_pilot
 
   apoapsis = vessel.orbit.apoapsis_altitude
   half_period = vessel.orbit.period / 2
@@ -111,11 +111,11 @@ def burn_to_apo(mission):
   target_altitude = mission.parameters.get('target_altitude', 100000)
   target_apt = mission.parameters.get('target_apt', 40)
   max_autostage = mission.parameters.get('max_autostage', 0)
-  min_pitch = mission.parameters.get('min_pitch', -10)
-  max_pitch = mission.parameters.get('max_pitch', 30)
+  min_pitch = mission.parameters.get('min_pitch_pid', -15)
+  max_pitch = mission.parameters.get('max_pitch_pid', 15)
 
   if mission.current_step["first_call"]:
-    mission.parameters["pid"] = PID(0.2, 0.01, 0.1, max_pitch, min_pitch)
+    mission.parameters["pid"] = PID(0.5, 0.05, 0.2, min_pitch, max_pitch)
     vessel.control.throttle = 1
 
   if apoapsis > target_altitude:
@@ -131,7 +131,8 @@ def burn_to_apo(mission):
   else:
     target_pitch = mission.parameters["pid"].seek(target_apt, apo_time, mission.ut())
 
-  vessel.auto_pilot.target_pitch_and_heading(target_pitch, 90)
+  ap.engage()
+  ap.target_pitch_and_heading(target_pitch, 90)
   mission.parameters["target_pitch"] = target_pitch
 
 
@@ -143,6 +144,7 @@ def coast_to_space(mission):
 
   if mission.current_step["first_call"]:
     vessel.control.throttle = 0
+    ap.engage()
     ap.reference_frame = vessel.orbital_reference_frame
     ap.target_direction = (0, 1, 0)
 
@@ -178,16 +180,24 @@ def prepare_circ_burn(mission):
                                                 prograde=circ_burn["delta_v"])
 
     mission.parameters["circ_burn"] = circ_burn
+    vessel.control.rcs = True
+    ap.engage()
     ap.reference_frame = circ_burn["node"].reference_frame
     ap.target_direction = (0, 1, 0)
 
-  elif ap.error < 1 and mission.ut() - mission.current_step["start_ut"] > 1:
+  else:
     circ_burn = mission.parameters["circ_burn"]
     burn_ut = circ_burn["burn_start_time"]
-    lead_time = 15
-    if burn_ut > mission.ut() + lead_time * 2:
-      mission.conn.space_center.warp_to(burn_ut - lead_time)
-    mission.next()
+
+    if burn_ut < mission.ut():
+      # burn right now!
+      mission.next('execute_circ_burn')
+
+    elif ap.error < 1 and mission.ut() - mission.current_step["start_ut"] > 1:
+      lead_time = 15
+      if burn_ut > mission.ut() + lead_time * 2:
+        mission.conn.space_center.warp_to(burn_ut - lead_time)
+      mission.next()
 
 
 def coast_to_circ_burn(mission):
@@ -207,7 +217,7 @@ def execute_circ_burn(mission):
   if mission.current_step["first_call"]:
     circ_burn["remaining_delta_v"] = remaining_delta_v
 
-  if circ_burn["burn_time"] > 10:
+  if compute_burn_time(vessel, remaining_delta_v) > 10:
     vessel.control.throttle = 1
   else:
     vessel.control.throttle = 0.05
@@ -215,7 +225,7 @@ def execute_circ_burn(mission):
   max_autostage = mission.parameters.get('max_autostage', 0)
   auto_stage(vessel, max_autostage)
 
-  if (remaining_delta_v < 0 or
+  if (remaining_delta_v <= 0 or
       remaining_delta_v > circ_burn["remaining_delta_v"]):
     vessel.control.throttle = 0
     circ_burn["node"].remove()

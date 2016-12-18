@@ -19,6 +19,15 @@ def pitch(vessel):
   return pitch_degrees
 
 
+def compute_burn_time(vessel, delta_v):
+  F = vessel.available_thrust
+  Isp = vessel.specific_impulse * vessel.orbit.body.surface_gravity
+  m0 = vessel.mass
+  m1 = m0 / math.exp(delta_v / Isp)
+  flow_rate = F / Isp
+  return (m0 - m1) / flow_rate
+
+
 def compute_circ_burn(vessel):
   """Computes burn parameters to circularize current orbit
 
@@ -38,12 +47,7 @@ def compute_circ_burn(vessel):
   delta_v = v2 - v1
 
   # Use rocket equation to compute burn time
-  F = vessel.available_thrust
-  Isp = vessel.specific_impulse * vessel.orbit.body.surface_gravity
-  m0 = vessel.mass
-  m1 = m0 / math.exp(delta_v / Isp)
-  flow_rate = F / Isp
-  burn_time = (m0 - m1) / flow_rate
+  burn_time = compute_burn_time(vessel, delta_v)
 
   return {"delta_v": delta_v,
           "burn_time": burn_time
