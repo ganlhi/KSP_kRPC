@@ -70,9 +70,9 @@ if __name__ == "__main__":
   conn = krpc.connect()
   vessel = conn.space_center.active_vessel
 
-  params = {'target_altitude': 120000,
-            'turn_end_alt': 80000,
-            'target_apt': 50}
+  params = {'target_altitude': 140000,
+            'turn_end_alt': 110000,
+            'target_apt': 60}
 
   mission = Mission(conn, all_steps, params)
   ui = init_ui(conn)

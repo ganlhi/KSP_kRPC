@@ -217,11 +217,6 @@ def execute_circ_burn(mission):
   if mission.current_step["first_call"]:
     circ_burn["remaining_delta_v"] = remaining_delta_v
 
-  if compute_burn_time(vessel, remaining_delta_v) > 10:
-    vessel.control.throttle = 1
-  else:
-    vessel.control.throttle = 0.05
-
   max_autostage = mission.parameters.get('max_autostage', 0)
   auto_stage(vessel, max_autostage)
 
@@ -234,6 +229,11 @@ def execute_circ_burn(mission):
       mission.next('prepare_circ_burn')
     else:
       mission.next()
+  else:
+    if compute_burn_time(vessel, remaining_delta_v) > 1:
+      vessel.control.throttle = 1
+    else:
+      vessel.control.throttle = 0.05
 
   circ_burn["remaining_delta_v"] = remaining_delta_v
 
