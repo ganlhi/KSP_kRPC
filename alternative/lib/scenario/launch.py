@@ -29,6 +29,8 @@ class LaunchScenario(Scenario):
     self.ap = self.vessel.auto_pilot
     self.start_ut = self.ksc.ut
     self.target_apt = self.parameters['target_apt']
+    self.turn_start_alt = None
+
 
     flight_ref = self.vessel.flight(self.vessel.orbit.body.reference_frame)
 
@@ -48,10 +50,7 @@ class LaunchScenario(Scenario):
                                            'static_pressure')
 
     self.thr_pid = PID(0.2, 0.01, 0.1, 0.1, 1)
-
-    min_pitch = self.parameters['min_pitch'] - self.parameters['pitch_offset']
-    max_pitch = self.parameters['min_pitch'] + self.parameters['pitch_offset']
-    self.pitch_pid = PID(0.5, 0.05, 0.2, min_pitch, max_pitch)
+    self.pitch_pid = PID(0.5, 0.05, 0.2, 0, self.parameters['pitch_offset'])
 
   def step(self):
     if self.apoapsis() >= self.parameters['target_altitude']:
@@ -61,9 +60,9 @@ class LaunchScenario(Scenario):
         return False
 
     if self.vessel.situation.name == 'pre_launch':
-      self.handle_prelaunch()
-    else:
-      auto_stage(self.vessel, self.parameters['max_autostage'])
+      return self.handle_prelaunch()
+
+    auto_stage(self.vessel, self.parameters['max_autostage'])
 
     if self.vessel.situation.name == 'flying':
       if self.speed() > self.parameters['turn_start_speed']:
@@ -86,21 +85,24 @@ class LaunchScenario(Scenario):
         self.control.activate_next_stage()
 
   def grav_turn(self):
-    if not hasattr(self, 'turn_start_alt'):
+    if self.turn_start_alt is None:
       self.turn_start_alt = self.altitude()
 
     frac_den = self.parameters['turn_end_alt'] - self.turn_start_alt
     frac_num = self.altitude() - self.turn_start_alt
     turn_angle = 90 * frac_num / frac_den
     target_pitch = max(self.parameters['min_pitch'], 90 - turn_angle)
-    self.ap.target_pitch_and_heading(target_pitch, 90)
 
     if self.per_time() < self.apo_time():
       new_thr = 1
+      set_pitch = target_pitch + self.parameters['pitch_offset']
     else:
       new_thr = self.thr_pid.seek(self.target_apt, self.apo_time(), self.ut())
+      set_pitch = (target_pitch +
+      self.pitch_pid.seek(self.target_apt, self.apo_time(), self.ut()))
 
     self.control.throttle = new_thr
+    self.ap.target_pitch_and_heading(set_pitch, 90)
 
   def burn_to_apo(self):
     apo_err = self.parameters['target_altitude'] - self.apoapsis()
@@ -109,13 +111,13 @@ class LaunchScenario(Scenario):
     else:
       self.control.throttle = 1
 
-    half_period = self.vessel.orbit.period / 2
-    if half_period < self.apo_time():
-      tgt_pitch = self.parameters['min_pitch'] + self.parameters['pitch_offset']
+    if self.per_time() < self.apo_time():
+      set_pitch = self.parameters['min_pitch'] + self.parameters['pitch_offset']
     else:
-      tgt_pitch = self.pitch_pid.seek(self.target_apt, self.apo_time(), self.ut())
+      set_pitch = (self.parameters['min_pitch'] +
+      self.pitch_pid.seek(self.target_apt, self.apo_time(), self.ut()))
 
-    self.ap.target_pitch_and_heading(tgt_pitch, 90)
+    self.ap.target_pitch_and_heading(set_pitch, 90)
 
   def on_high_alt(self):
     self.target_apt = 60
