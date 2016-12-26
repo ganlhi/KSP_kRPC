@@ -89,8 +89,8 @@ if __name__ == '__main__':
   if vessel.situation.name == 'pre_launch':
     perform_launch(conn, ksc, vessel)
 
-  if vessel.situation.name == 'orbiting':
+  elif vessel.situation.name == 'orbiting':
     perform_return(conn, ksc, vessel)
 
-  if vessel.situation.name == 'flying':
+  elif vessel.situation.name == 'flying':
     perform_reentry(conn, ksc, vessel)
