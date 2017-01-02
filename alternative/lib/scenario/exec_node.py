@@ -1,11 +1,14 @@
 from .scenario import Scenario
 from ..nav import compute_burn_time
+from ..parts import auto_stage
 
 
 class ExecNodeScenario(Scenario):
 
   parameters = {'lead_time': 15,
-                'use_rcs': True}
+                'use_rcs': True,
+                'max_autostage': 0,
+                'stage_wait': 1}
 
   def pre_run(self):
     self.conn = self.context['conn']
@@ -69,6 +72,10 @@ class ExecNodeScenario(Scenario):
     self.control.throttle = 1 - part_done
 
     self.context['last_remaining'] = rem_dv
+
+    auto_stage(self.vessel,
+               max_autostage=self.parameters['max_autostage'],
+               stage_wait=self.parameters['stage_wait'])
 
   def point_to_node(self):
     node = self.parameters['node']

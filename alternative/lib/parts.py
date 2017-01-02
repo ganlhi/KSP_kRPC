@@ -22,7 +22,7 @@ def jettison_fairing(part):
         module.trigger_event("Jettison")
 
 
-def auto_stage(vessel, max_autostage=0):
+def auto_stage(vessel, max_autostage=0, stage_wait=0.5):
   if not vessel.available_thrust:
     active_stage = 99
     active_engines = filter(lambda e: e.active, vessel.parts.engines)
@@ -34,7 +34,7 @@ def auto_stage(vessel, max_autostage=0):
       vessel.control.throttle = 0
 
       while not vessel.available_thrust:
-        time.sleep(0.5)
+        time.sleep(stage_wait)
         vessel.control.activate_next_stage()
 
       vessel.control.throttle = old_thr

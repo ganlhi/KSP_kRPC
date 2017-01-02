@@ -7,22 +7,11 @@ from lib.scenario.exec_node import ExecNodeScenario
 from lib.nav import compute_circ_burn
 
 
-def is_icarus_engine_active(vessel):
-  icarus_eng = 'SSTU-SC-ENG-SuperDraco-L'
-  engines = vessel.parts.engines
-  eng = [e for e in engines if e.active and e.part.name == icarus_eng]
-  return len(eng) == 1
-
-
-def is_landed(vessel):
-  return (vessel.situation.name == 'landed' or
-          vessel.situation.name == 'splashed')
-
-
 def perform_launch(conn, ksc, vessel):
   launch_params = {'target_altitude': 120000,
                    'target_apt': 50.0,
-                   'turn_end_alt': 95000}
+                   'turn_end_alt': 95000,
+                   'turn_style': 'linear'}
 
   LaunchScenario(context={'conn': conn}, parameters=launch_params).run()
 

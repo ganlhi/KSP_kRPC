@@ -14,8 +14,10 @@ class LaunchScenario(Scenario):
                 'turn_end_alt': 80000,
                 'turn_start_alt': 1000,
                 'turn_start_speed': 100,
+                'turn_style': 'square_root',
                 'min_pitch': 0,
-                'pitch_offset': 30}
+                'pitch_offset': 30,
+                'stage_wait': 1}
 
   events = {
     'high_altitude': {
@@ -69,7 +71,9 @@ class LaunchScenario(Scenario):
       self.context['step_name'] = 'Pre-launch'
       return self.handle_prelaunch()
 
-    auto_stage(self.vessel, self.parameters['max_autostage'])
+    auto_stage(self.vessel,
+               max_autostage=self.parameters['max_autostage'],
+               stage_wait=self.parameters['stage_wait'])
 
     self.context['step_name'] = 'Launch'
     if self.speed() > self.parameters['turn_start_speed']:
@@ -97,7 +101,12 @@ class LaunchScenario(Scenario):
 
     frac_den = self.parameters['turn_end_alt'] - self.context['turn_start_alt']
     frac_num = self.altitude() - self.context['turn_start_alt']
-    turn_angle = 90 * sqrt(frac_num / frac_den)
+
+    if self.parameters['turn_style'] == 'linear':
+      turn_angle = 90 * frac_num / frac_den
+    else:
+      turn_angle = 90 * sqrt(frac_num / frac_den)
+
     target_pitch = max(self.parameters['min_pitch'], 90 - turn_angle)
 
     if self.per_time() < self.apo_time():
@@ -111,7 +120,8 @@ class LaunchScenario(Scenario):
         set_pitch = target_pitch + pitch_adj
       else:
         self.context['adjust_pitch'] = (apt < (self.target_apt * 0.8) and
-                                        apt < self.context.get('last_apt', 0))
+                                        apt < self.context.get('last_apt', 0) and
+                                        self.stat_press() < 100)
         set_pitch = target_pitch
 
     if self.altitude() > self.vessel.orbit.body.atmosphere_depth:
@@ -138,7 +148,6 @@ class LaunchScenario(Scenario):
     self.context['ui']['panel'].remove()
 
   def on_high_alt(self):
-    # self.target_apt = 60
     if len(find_all_fairings(self.vessel)) > 0:
       fairings = filter(lambda f: getattr(f, 'tag', None) != "noauto",
                         find_all_fairings(self.vessel))
